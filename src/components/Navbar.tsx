@@ -7,8 +7,8 @@ const Navbar = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
-            <a href="/" className="text-2xl font-bold text-foreground">
-              peps wall
+            <a href="/" className="text-xl md:text-2xl font-bold text-foreground">
+              Adeeb Altaf Wallpaper UAE
             </a>
           </div>
           

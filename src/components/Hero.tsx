@@ -45,7 +45,7 @@ const Hero = () => {
               
               <div className="flex items-center gap-2">
                 <Award className="h-5 w-5 text-accent" />
-                <span className="text-sm text-white/90">#1 wallpaper company - Khaleej Times</span>
+                <span className="text-sm text-white/90">Trusted Premium Wallpaper Provider in UAE</span>
               </div>
             </div>
           </div>
