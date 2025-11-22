@@ -1,6 +1,7 @@
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Star, Award } from "lucide-react";
-import heroImage from "@/assets/hero-wallpaper.jpg";
+import heroImage from "@/assets/premium-wallpaper.jpg";
 
 const Hero = () => {
   return (
@@ -28,9 +29,11 @@ const Hero = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-              <Button variant="hero" size="xl">
-                Schedule a Free Home Visit →
-              </Button>
+              <Link to="/contact">
+                <Button variant="hero" size="xl" className="animate-pulse hover:animate-none">
+                  Schedule a Free Home Visit →
+                </Button>
+              </Link>
             </div>
 
             {/* Trust Badges */}

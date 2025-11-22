@@ -1,0 +1,89 @@
+═══════════════════════════════════════════════════════════════════
+  📸 APNI PICTURE WEBSITE PE DIKHAANE KA STEP-BY-STEP GUIDE
+═══════════════════════════════════════════════════════════════════
+
+❌ IMPORTANT: Sirf paste karne se picture website pe NAHI dikhegi!
+✅ Code mein add karna hoga - ye guide dekhein:
+
+─────────────────────────────────────────────────────────────────
+
+STEP 1: ✅ Picture Paste Ho Chuki
+─────────────────────────────────────────────────────────────────
+Aapki picture: "download (1).jpg" 
+Location: collections/classic/ folder mein
+Status: ✅ Paste ho chuki hai!
+
+─────────────────────────────────────────────────────────────────
+
+STEP 2: Code Mein Import Add Karein
+─────────────────────────────────────────────────────────────────
+File: src/components/ProductGallery.tsx
+
+1. File ko open karein: ProductGallery.tsx
+2. Line 6-10 ke baad (import statements ke baad) ye add karein:
+
+   import myClassicWallpaper from "@/assets/collections/classic/download (1).jpg";
+
+   ⚠️ NOTE: File name mein space hai "download (1).jpg"
+   Agar error aaye to file ka naam change karein:
+   "download-1.jpg" ya "classic-wallpaper-1.jpg"
+
+─────────────────────────────────────────────────────────────────
+
+STEP 3: Array Mein Use Karein
+─────────────────────────────────────────────────────────────────
+File: src/components/ProductGallery.tsx
+
+Line 65-68 ke baad (Classic category ke baad) ye add karein:
+
+  // Collections - Classic
+  { id: 5, name: "Floral Paradise", category: "Classic", color: "Pink", pageType: "collections", image: "https://images.unsplash.com/photo-1604014237800-1c9102c219da?w=400&h=500&fit=crop" },
+  { id: 6, name: "Vintage Damask", category: "Classic", color: "Brown", pageType: "collections", image: "https://images.unsplash.com/photo-1615529328331-f8917597711f?w=400&h=500&fit=crop" },
+  { id: 7, name: "Traditional Paisley", category: "Classic", color: "Red", pageType: "collections", image: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=400&h=500&fit=crop" },
+  
+  // YAHAN APNI PICTURE ADD KAREIN:
+  { id: 100, name: "My Classic Wallpaper", category: "Classic", color: "Blue", pageType: "collections", image: myClassicWallpaper },
+
+─────────────────────────────────────────────────────────────────
+
+COMPLETE EXAMPLE:
+─────────────────────────────────────────────────────────────────
+
+// TOP OF FILE (Line 11 ke baad):
+import myClassicWallpaper from "@/assets/collections/classic/download (1).jpg";
+
+// ARRAY MEIN (Line 68 ke baad):
+{ id: 100, name: "My Classic Design", category: "Classic", color: "Blue", pageType: "collections", image: myClassicWallpaper },
+
+─────────────────────────────────────────────────────────────────
+
+STEP 4: Save aur Check Karein
+─────────────────────────────────────────────────────────────────
+1. File save karein (Ctrl+S)
+2. Development server restart karein (agar chal raha ho)
+3. Website pe Collections page pe jao
+4. Classic category select karein
+5. Aapki picture dikhni chahiye! 🎉
+
+─────────────────────────────────────────────────────────────────
+
+⚠️ FILE NAME MEIN SPACE HAI:
+─────────────────────────────────────────────────────────────────
+File name: "download (1).jpg" mein space aur brackets hain.
+
+BETTER: File ka naam change karein:
+1. Right-click on file → Rename
+2. Naya naam: "classic-wallpaper-1.jpg" ya "download-1.jpg"
+3. Phir import mein bhi wahi naam use karein
+
+─────────────────────────────────────────────────────────────────
+
+QUICK REFERENCE:
+─────────────────────────────────────────────────────────────────
+✅ Paste picture → Folder mein ✅ (Ho gaya)
+❌ Import in code → Abhi karna hai
+❌ Add to array → Abhi karna hai
+❌ Website pe show → Import ke baad hoga
+
+═══════════════════════════════════════════════════════════════════
+

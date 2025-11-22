@@ -1,0 +1,46 @@
+═══════════════════════════════════════════════════════
+  QUICK START - Picture Add Karne Ka Tarika
+═══════════════════════════════════════════════════════
+
+STEP 1: Apni picture ko COPY karein (Ctrl+C)
+
+STEP 2: Sahi folder mein PASTE karein:
+
+   ✅ Collections ke liye:
+      → src/assets/collections/modern/
+      → src/assets/collections/classic/
+      → src/assets/collections/luxury/
+      → src/assets/collections/custom/
+
+   ✅ Kids ke liye:
+      → src/assets/kids/nursery/
+      → src/assets/kids/toddlers/
+      → src/assets/kids/teens/
+      → src/assets/kids/educational/
+
+   ✅ 3D ke liye:
+      → src/assets/3d/geometric/
+      → src/assets/3d/nature/
+      → src/assets/3d/abstract/
+      → src/assets/3d/luxury/
+
+   ✅ Stickers ke liye:
+      → src/assets/stickers/kids/
+      → src/assets/stickers/decorative/
+      → src/assets/stickers/quotes/
+      → src/assets/stickers/shapes/
+
+   ✅ Colors ke liye:
+      → src/assets/colors/
+
+STEP 3: Code mein add karein (ProductGallery.tsx file mein)
+
+═══════════════════════════════════════════════════════
+
+⚠️ IMPORTANT:
+   - .gitkeep files ko ignore karein - ye sirf placeholder hain
+   - Pictures DIRECTLY folders mein paste karein
+   - .gitkeep file ko open na karein, folder mein paste karein!
+
+═══════════════════════════════════════════════════════
+
