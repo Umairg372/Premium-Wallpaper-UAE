@@ -1,8 +1,8 @@
 export const CONTACT_INFO = {
   phone1: "034505474430",
-  phone2: "03187470608",
-  email: "mianumairsab372@gmail.com",
-  whatsapp: "97134505474430", // UAE country code + phone
+  phone2: "00971501973357",
+  email: "mainaltaf123@gmail.com",
+  whatsapp: "00971501973357", // UAE country code + phone
   businessHours: {
     weekdays: "Sunday - Thursday: 9:00 AM - 6:00 PM",
     friday: "Friday: 2:00 PM - 6:00 PM",
@@ -19,7 +19,15 @@ export const NAVIGATION_LINKS = [
   { name: "Colors", path: "/colors" },
   { name: "Kids", path: "/kids" },
   { name: "Stickers", path: "/stickers" },
-  { name: "App Gallery", path: "/app-gallery" },
+  { name: "Videos", path: "/videos" },
   { name: "About", path: "/about" },
   { name: "Contact", path: "/contact" }
+];
+
+export const SOCIAL_LINKS = [
+  { name: "Facebook", url: "https://www.facebook.com/yourpage" },
+  { name: "Instagram", url: "https://www.instagram.com/yourprofile" },
+  { name: "LinkedIn", url: "https://www.linkedin.com/in/yourprofile" },
+  { name: "Twitter", url: "https://www.twitter.com/yourhandle" },
+  // Add more social media links as needed
 ];

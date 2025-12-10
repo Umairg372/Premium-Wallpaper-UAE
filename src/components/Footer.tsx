@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Phone, Mail, MapPin, Clock } from "lucide-react";
-import { CONTACT_INFO, NAVIGATION_LINKS } from "@/lib/constants";
+import { CONTACT_INFO, NAVIGATION_LINKS, SOCIAL_LINKS } from "@/lib/constants";
 
 const Footer = () => {
   return (
@@ -65,20 +65,26 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Business Hours */}
+          {/* Social Media Links */}
           <div className="space-y-4">
-            <h4 className="text-lg font-semibold text-foreground">Business Hours</h4>
-            <div className="space-y-2">
-              <div className="flex items-start gap-3">
-                <Clock className="h-4 w-4 text-primary mt-1" />
-                <div className="text-sm text-muted-foreground">
-                  <p>{CONTACT_INFO.businessHours.weekdays}</p>
-                  <p>{CONTACT_INFO.businessHours.friday}</p>
-                  <p>{CONTACT_INFO.businessHours.saturday}</p>
-                </div>
-              </div>
-            </div>
+            <h4 className="text-lg font-semibold text-foreground">Connect With Us</h4>
+            <ul className="space-y-2">
+              {SOCIAL_LINKS.map((link) => (
+                <li key={link.name}>
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
+                  >
+                    {/* Placeholder for social media icon if added later */}
+                    {link.name}
+                  </a>
+                </li>
+              ))}
+            </ul>
           </div>
+
         </div>
 
         {/* Bottom Bar */}

@@ -1,0 +1,1011 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Upload, Trash2, Edit, Search, X, LogOut, Key, Eye, EyeOff, Video, Library, Lock, MessageSquare } from "lucide-react";
+import { toast } from "sonner";
+import { getWallpapers, createWallpaper, updateWallpaper, deleteWallpaper, type Wallpaper, changeAdminPassword, createVideoWallpaper, bulkCreateWallpaper, addVideoToWallpaper } from "@/lib/api";
+import { logoutAdmin } from "@/lib/auth";
+import CustomerMessages from "@/components/CustomerMessages";
+
+const Admin = () => {
+  const [wallpapers, setWallpapers] = useState<Wallpaper[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'wallpapers' | 'messages'>('wallpapers');
+  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedPageType, setSelectedPageType] = useState<string>("all");
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [bulkUploadDialogOpen, setBulkUploadDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [videoUploadDialogOpen, setVideoUploadDialogOpen] = useState(false);
+  const [editingWallpaper, setEditingWallpaper] = useState<Wallpaper | null>(null);
+  const [videoUploadData, setVideoUploadData] = useState<{
+    name: string;
+    videoFile: File | null;
+  }>({
+    name: "",
+    videoFile: null,
+  });
+  const [videoWallpaperId, setVideoWallpaperId] = useState<number | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    name: "",
+    category: "",
+    color: "",
+    pageType: "collections" as "collections" | "kids" | "3d" | "stickers" | "colors" | "videos",
+    image: null as File | null,
+  });
+
+  const [bulkFormData, setBulkFormData] = useState({
+    pageType: "collections" as "collections" | "kids" | "3d" | "stickers" | "colors" | "videos",
+    category: "",
+    images: [] as File[],
+  });
+
+  // Password change state
+  const [changePasswordDialogOpen, setChangePasswordDialogOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
+
+  const allCategories = ["Modern", "Classic", "Luxury", "Custom", "Nursery", "Toddlers", "Teens", "Educational", "3D Geometric", "3D Nature", "3D Abstract", "3D Luxury", "Kids Stickers", "Decorative Stickers", "Quote Stickers", "Shape Stickers", "Color"];
+  const colors = ["Red", "Blue", "Green", "Pink", "Yellow", "Purple", "Gray", "White", "Brown", "Gold", "Beige", "Cream"];
+
+  const CATEGORY_MAP: Record<string, string[]> = {
+    collections: ["Modern", "Classic", "Luxury", "Custom"],
+    kids: ["Nursery", "Toddlers", "Teens", "Educational"],
+    '3d': ["3D Geometric", "3D Nature", "3D Abstract", "3D Luxury"],
+    stickers: ["Kids Stickers", "Decorative Stickers", "Quote Stickers", "Shape Stickers"],
+    colors: ["Color"], // Default category for 'colors' pageType
+    videos: ["Video"], // Default category for 'videos' pageType
+  };
+
+  // Derived state for filtered categories
+  const filteredCategories = formData.pageType === "colors"
+    ? colors // Show all colors as categories for 'colors' pageType
+    : CATEGORY_MAP[formData.pageType] || []; // Get categories based on pageType
+
+  const bulkFilteredCategories = bulkFormData.pageType === "colors"
+    ? colors // Show all colors as categories for 'colors' pageType
+    : CATEGORY_MAP[bulkFormData.pageType] || []; // Get categories based on pageType
+  const pageTypes = [
+    { value: "collections", label: "Collections" },
+    { value: "kids", label: "Kids" },
+    { value: "3d", label: "3D Wallpapers" },
+    { value: "stickers", label: "Stickers" },
+    { value: "colors", label: "Colors" },
+    { value: "videos", label: "Videos" },
+  ];
+
+  useEffect(() => {
+    fetchWallpapers();
+  }, []);
+
+  // Effect to reset category when pageType changes
+  useEffect(() => {
+    // If pageType changes to 'colors', we'll use the selected color as the category
+    if (formData.pageType === 'colors' && formData.color) {
+      setFormData(prev => ({ ...prev, category: formData.color }));
+    }
+    // Otherwise, if the current category is invalid for the new pageType, reset it
+    else if (formData.category && !filteredCategories.includes(formData.category)) {
+      setFormData(prev => ({ ...prev, category: "" }));
+    }
+  }, [formData.category, formData.pageType, formData.color, filteredCategories]);
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Basic validation
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters long");
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      toast.error("New passwords do not match");
+      return;
+    }
+
+    try {
+      await changeAdminPassword(newPassword);
+      toast.success("Password changed successfully!");
+      // Reset form and close dialog
+      setNewPassword("");
+      setConfirmNewPassword("");
+      setChangePasswordDialogOpen(false);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to change password";
+      toast.error(errorMessage);
+    }
+  };
+
+  const fetchWallpapers = async () => {
+    try {
+      setLoading(true);
+      const data = await getWallpapers();
+      setWallpapers(data);
+    } catch (error) {
+      toast.error("Failed to load wallpapers");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFormData({ ...formData, image: e.target.files[0] });
+    } else {
+      setFormData({ ...formData, image: null });
+    }
+  };
+
+  const handleBulkFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setBulkFormData({ ...bulkFormData, images: Array.from(e.target.files) });
+    } else {
+      setBulkFormData({ ...bulkFormData, images: [] });
+    }
+  };
+
+  const handleVideoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setVideoUploadData(prev => ({ ...prev, videoFile: e.target.files[0] }));
+    } else {
+      setVideoUploadData(prev => ({ ...prev, videoFile: null }));
+    }
+  };
+
+  useEffect(() => {
+    if (formData.image) {
+      const url = URL.createObjectURL(formData.image);
+      setPreviewUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    setPreviewUrl(null);
+  }, [formData.image]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.image) {
+      toast.error("Please select an image");
+      return;
+    }
+
+    // For 'colors' pageType, use the selected color as the category
+    const categoryToUse = formData.pageType === 'colors' && formData.color ? formData.color : formData.category;
+
+    try {
+      await createWallpaper({
+        name: formData.name,
+        category: categoryToUse,
+        color: formData.color,
+        pageType: formData.pageType,
+        image: formData.image,
+      });
+
+      toast.success("Wallpaper uploaded successfully!");
+      setUploadDialogOpen(false);
+      resetForm();
+      fetchWallpapers();
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to upload wallpaper";
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleBulkSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (bulkFormData.images.length === 0) {
+      toast.error("Please select at least one image");
+      return;
+    }
+
+    // For 'colors' pageType, use the selected color as the category
+    const categoryToUse = bulkFormData.pageType === 'colors' && bulkFormData.color ? bulkFormData.color : bulkFormData.category;
+
+    try {
+      const result = await bulkCreateWallpaper({
+        pageType: bulkFormData.pageType,
+        category: categoryToUse,
+        images: bulkFormData.images,
+      });
+
+      toast.success(result.message);
+      setBulkUploadDialogOpen(false);
+      resetBulkForm();
+      fetchWallpapers();
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to bulk upload wallpapers";
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleEdit = (wallpaper: Wallpaper) => {
+    setEditingWallpaper(wallpaper);
+    setFormData({
+      name: wallpaper.name,
+      category: wallpaper.category,
+      color: wallpaper.color,
+      pageType: wallpaper.pageType,
+      image: null,
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleOpenVideoUpload = (wallpaper: Wallpaper) => {
+    setVideoWallpaperId(wallpaper.id);
+    setVideoUploadData({ name: wallpaper.name, videoFile: null });
+    setVideoUploadDialogOpen(true);
+  };
+
+  const handleVideoSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!videoUploadData.videoFile) {
+      toast.error("Please select a video file.");
+      return;
+    }
+    if (!videoUploadData.name) {
+      toast.error("Please enter a name for the video.");
+      return;
+    }
+
+    try {
+      if (videoWallpaperId) {
+        // Adding video to an existing wallpaper
+        await addVideoToWallpaper(videoWallpaperId, {
+          name: videoUploadData.name,
+          videoFile: videoUploadData.videoFile,
+        });
+        toast.success("Video added to wallpaper successfully!");
+      } else {
+        // Creating a new video wallpaper
+        await createVideoWallpaper({
+          name: videoUploadData.name,
+          videoFile: videoUploadData.videoFile,
+          pageType: 'videos',
+          category: 'Video',
+          color: 'default'
+        });
+        toast.success("Video wallpaper uploaded successfully!");
+      }
+
+      setVideoUploadDialogOpen(false);
+      // Reset video upload form data
+      setVideoUploadData({
+        name: "",
+        videoFile: null,
+      });
+      setVideoWallpaperId(null); // Reset wallpaper ID
+      fetchWallpapers();
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to upload video wallpaper.";
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!editingWallpaper) return;
+
+    try {
+      await updateWallpaper(editingWallpaper.id, {
+        name: formData.name,
+        category: formData.category,
+        color: formData.color,
+        pageType: formData.pageType,
+      });
+
+      toast.success("Wallpaper updated successfully!");
+      setEditDialogOpen(false);
+      setEditingWallpaper(null);
+      resetForm();
+      fetchWallpapers();
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to update wallpaper";
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this wallpaper?")) return;
+
+    try {
+      await deleteWallpaper(id);
+      toast.success("Wallpaper deleted successfully!");
+      fetchWallpapers();
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to delete wallpaper";
+      toast.error(errorMessage);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      category: "",
+      color: "",
+      pageType: "collections",
+      image: null,
+    });
+    setEditingWallpaper(null);
+  };
+
+  const resetBulkForm = () => {
+    setBulkFormData({
+      pageType: "collections",
+      category: "",
+      images: [],
+    });
+  };
+
+  const filteredWallpapers = wallpapers.filter((wallpaper) => {
+    const matchesSearch = wallpaper.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         wallpaper.category.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesPageType = selectedPageType === "all" || wallpaper.pageType === selectedPageType;
+    return matchesSearch && matchesPageType;
+  });
+
+  return (
+    <div className="min-h-screen">
+      <Navbar />
+      <main className="pt-16">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h1 className="text-4xl font-bold text-foreground mb-2">Admin Dashboard</h1>
+                <p className="text-muted-foreground">Manage wallpapers and customer messages</p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setChangePasswordDialogOpen(true)}
+                >
+                  <Key className="h-4 w-4 mr-2" />
+                  Change Password
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    await logoutAdmin();
+                    navigate('/');
+                  }}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              </div>
+            </div>
+            
+            {/* Tab Navigation */}
+            <div className="flex border-b">
+              <button
+                className={`px-4 py-2 font-medium text-sm ${
+                  activeTab === 'wallpapers'
+                    ? 'border-b-2 border-primary text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+                onClick={() => setActiveTab('wallpapers')}
+              >
+                <Upload className="h-4 w-4 mr-2 inline" />
+                Wallpapers
+              </button>
+              <button
+                className={`px-4 py-2 font-medium text-sm ${
+                  activeTab === 'messages'
+                    ? 'border-b-2 border-primary text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+                onClick={() => setActiveTab('messages')}
+              >
+                <MessageSquare className="h-4 w-4 mr-2 inline" />
+                Customer Messages
+              </button>
+            </div>
+          </div>
+
+          {/* Conditional rendering based on active tab */}
+          {activeTab === 'wallpapers' ? (
+            <>
+              {/* Upload Buttons */}
+              <div className="flex gap-2 mb-6">
+                <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload Wallpaper
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Upload New Wallpaper</DialogTitle>
+                      <DialogDescription>
+                        Fill in the details and select an image to upload
+                      </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                      <div className="space-y-2">
+                        <div>
+                          <Label htmlFor="image">Image *</Label>
+                          <Input
+                            id="image"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileChange}
+                            required
+                            className="mt-1"
+                          />
+                          {formData.image && (
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Selected: {formData.image.name}
+                            </p>
+                          )}
+                        </div>
+                        {previewUrl && (
+                          <div>
+                            <Label className="text-sm text-muted-foreground">Live preview</Label>
+                            <div className="mt-2 flex h-64 w-full items-center justify-center overflow-hidden rounded-lg border bg-muted">
+                              <img
+                                src={previewUrl}
+                                alt="Wallpaper preview"
+                                className="max-h-full max-w-full object-contain"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <Label htmlFor="name">Name *</Label>
+                        <Input
+                          id="name"
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          required
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="pageType">Page Type *</Label>
+                        <Select
+                          value={formData.pageType}
+                          onValueChange={(value: "collections" | "kids" | "3d" | "stickers" | "colors" | "videos") => setFormData({ ...formData, pageType: value })}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {pageTypes.map((type) => (
+                              <SelectItem key={type.value} value={type.value}>
+                                {type.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {formData.pageType !== 'colors' && (
+                        <div>
+                          <Label htmlFor="category">Category *</Label>
+                          <Select
+                            value={formData.category}
+                            onValueChange={(value) => setFormData({ ...formData, category: value })}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Select category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {filteredCategories.map((cat) => (
+                                <SelectItem key={cat} value={cat}>
+                                  {cat}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                      {formData.pageType === 'colors' && (
+                        <div>
+                          <Label htmlFor="color">Color *</Label>
+                          <Select
+                            value={formData.color}
+                            onValueChange={(value) => setFormData({ ...formData, color: value })}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {colors.map((col) => (
+                                <SelectItem key={col} value={col}>
+                                  {col}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                      <div className="flex justify-end gap-2 pt-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setUploadDialogOpen(false);
+                            resetForm();
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button type="submit">Upload</Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+                <Dialog open={bulkUploadDialogOpen} onOpenChange={setBulkUploadDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Library className="h-4 w-4 mr-2" />
+                      Bulk Upload
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Bulk Upload Wallpapers</DialogTitle>
+                      <DialogDescription>
+                        Select multiple images to upload with the same page type and category.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleBulkSubmit} className="space-y-4">
+                      <div>
+                        <Label htmlFor="bulk-images">Images *</Label>
+                        <Input
+                          id="bulk-images"
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleBulkFileChange}
+                          required
+                          className="mt-1"
+                        />
+                        {bulkFormData.images.length > 0 && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {bulkFormData.images.length} files selected
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <Label htmlFor="bulk-pageType">Page Type *</Label>
+                        <Select
+                          value={bulkFormData.pageType}
+                          onValueChange={(value: "collections" | "kids" | "3d" | "stickers" | "colors" | "videos") => setBulkFormData({ ...bulkFormData, pageType: value })}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {pageTypes.map((type) => (
+                              <SelectItem key={type.value} value={type.value}>
+                                {type.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {bulkFormData.pageType !== 'colors' && (
+                        <div>
+                          <Label htmlFor="bulk-category">Category *</Label>
+                          <Select
+                            value={bulkFormData.category}
+                            onValueChange={(value) => setBulkFormData({ ...bulkFormData, category: value })}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Select category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {bulkFilteredCategories.map((cat) => (
+                                <SelectItem key={cat} value={cat}>
+                                  {cat}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                      {bulkFormData.pageType === 'colors' && (
+                        <div>
+                          <Label htmlFor="bulk-color">Color *</Label>
+                          <Select
+                            value={bulkFormData.color}
+                            onValueChange={(value) => setBulkFormData({ ...bulkFormData, color: value })}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {colors.map((col) => (
+                                <SelectItem key={col} value={col}>
+                                  {col}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                      <div className="flex justify-end gap-2 pt-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setBulkUploadDialogOpen(false);
+                            resetBulkForm();
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button type="submit">Upload</Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+                <Dialog open={videoUploadDialogOpen} onOpenChange={setVideoUploadDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Video className="h-4 w-4 mr-2" />
+                      Upload Video
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Upload New Video Wallpaper</DialogTitle>
+                      <DialogDescription>Enter a name and select a video file to upload.</DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleVideoSubmit} className="space-y-4">
+                      <div>
+                        <Label htmlFor="video-name">Name *</Label>
+                        <Input
+                          id="video-name"
+                          value={videoUploadData.name}
+                          onChange={(e) => setVideoUploadData({ ...videoUploadData, name: e.target.value })}
+                          required
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="video">Video File *</Label>
+                        <Input
+                          id="video"
+                          type="file"
+                          accept="video/mp4,video/webm,video/mov"
+                          onChange={handleVideoFileChange}
+                          required
+                          className="mt-1"
+                        />
+                        {videoUploadData.videoFile && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Selected: {videoUploadData.videoFile.name}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex justify-end gap-2 pt-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setVideoUploadDialogOpen(false);
+                            setVideoWallpaperId(null); // Reset wallpaper ID
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button type="submit">Upload Video</Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              {/* Filters */}
+              <div className="flex gap-4 mb-6">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search wallpapers..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                  {searchTerm && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8"
+                      onClick={() => setSearchTerm("")}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                <Select value={selectedPageType} onValueChange={setSelectedPageType}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    {pageTypes.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Wallpapers Grid */}
+              {loading ? (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">Loading wallpapers...</p>
+                </div>
+              ) : filteredWallpapers.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">No wallpapers found</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {filteredWallpapers.map((wallpaper) => (
+                    <Card key={wallpaper.id} className="overflow-hidden">
+                      <div className="aspect-[3/4] overflow-hidden bg-muted flex items-center justify-center">
+                        {wallpaper.videoUrl && !wallpaper.thumbnailUrl && !wallpaper.imageUrl ? (
+                          // Show a video placeholder if it's a video-only wallpaper
+                          <div className="flex flex-col items-center justify-center h-full w-full p-4 text-center">
+                            <Video className="h-12 w-12 text-gray-400 mb-2" />
+                            <span className="text-sm text-gray-500">Video</span>
+                            <span className="text-xs text-gray-400 mt-1">No thumbnail</span>
+                          </div>
+                        ) : (
+                          <img
+                            src={wallpaper.thumbnailUrl || wallpaper.imageUrl || "https://via.placeholder.com/400x600?text=No+Image"}
+                            alt={wallpaper.name}
+                            className="h-full w-full object-contain"
+                            onError={(e) => {
+                              e.currentTarget.src = "https://via.placeholder.com/400x600?text=Image+Not+Found";
+                            }}
+                          />
+                        )}
+                      </div>
+                      <CardHeader>
+                        <CardTitle className="text-lg">{wallpaper.name}</CardTitle>
+                        <CardDescription>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            <Badge variant="secondary">{wallpaper.category}</Badge>
+                            <Badge variant="outline">{wallpaper.color}</Badge>
+                            <Badge variant="outline">{wallpaper.pageType}</Badge>
+                          </div>
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => handleEdit(wallpaper)}
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => handleDelete(wallpaper.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            // Customer Messages Tab
+            <div className="mt-4">
+              <CustomerMessages />
+            </div>
+          )}
+
+          {/* Edit Dialog */}
+          <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Edit Wallpaper</DialogTitle>
+                <DialogDescription>
+                  Update the wallpaper details
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleUpdate} className="space-y-4">
+                <div>
+                  <Label htmlFor="edit-name">Name *</Label>
+                  <Input
+                    id="edit-name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-pageType">Page Type *</Label>
+                  <Select
+                    value={formData.pageType}
+                    onValueChange={(value: "collections" | "kids" | "3d" | "stickers" | "colors" | "videos") => setFormData({ ...formData, pageType: value })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {pageTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {formData.pageType !== 'colors' && (
+                  <div>
+                    <Label htmlFor="edit-category">Category *</Label>
+                    <Select
+                      value={formData.category}
+                      onValueChange={(value) => setFormData({ ...formData, category: value })}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {filteredCategories.map((cat) => (
+                          <SelectItem key={cat} value={cat}>
+                            {cat}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                <div>
+                  <Label htmlFor="edit-color">Color *</Label>
+                  <Select
+                    value={formData.color}
+                    onValueChange={(value) => setFormData({ ...formData, color: value })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select color" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {colors.map((col) => (
+                        <SelectItem key={col} value={col}>
+                          {col}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setEditDialogOpen(false);
+                      resetForm();
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit">Update</Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          {/* Change Password Dialog */}
+          <Dialog open={changePasswordDialogOpen} onOpenChange={setChangePasswordDialogOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Change Password</DialogTitle>
+                <DialogDescription>
+                  Enter a new password for admin access
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleChangePassword} className="space-y-4">
+                <div>
+                  <Label htmlFor="new-password">New Password</Label>
+                  <div className="relative mt-1">
+                    <Input
+                      id="new-password"
+                      type={showNewPassword ? "text" : "password"}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Enter new password"
+                      required
+                      minLength={6}
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                    >
+                      {showNewPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="confirm-new-password">Confirm New Password</Label>
+                  <div className="relative mt-1">
+                    <Input
+                      id="confirm-new-password"
+                      type={showConfirmNewPassword ? "text" : "password"}
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      placeholder="Confirm new password"
+                      required
+                      minLength={6}
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                      onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)}
+                    >
+                      {showConfirmNewPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setChangePasswordDialogOpen(false);
+                      setNewPassword("");
+                      setConfirmNewPassword("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit">Change Password</Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+};
+
+export default Admin;

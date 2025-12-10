@@ -10,10 +10,14 @@ import Kids from "./pages/Kids";
 import Colors from "./pages/Colors";
 import Stickers from "./pages/Stickers";
 import About from "./pages/About";
-import AppGallery from "./pages/AppGallery";
+import Videos from "./pages/Videos";
 import Contact from "./pages/Contact";
+import Admin from "./pages/Admin";
+import AdminLogin from "./pages/AdminLogin";
+import PasswordSetup from "./pages/PasswordSetup";
 import NotFound from "./pages/NotFound";
 import WhatsAppButton from "./components/WhatsAppButton";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -31,8 +35,15 @@ const App = () => (
           <Route path="/colors" element={<Colors />} />
           <Route path="/stickers" element={<Stickers />} />
           <Route path="/about" element={<About />} />
-          <Route path="/app-gallery" element={<AppGallery />} />
+          <Route path="/videos" element={<Videos />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin/setup" element={<PasswordSetup />} />
+          <Route path="/admin" element={
+            <ProtectedRoute>
+              <Admin />
+            </ProtectedRoute>
+          } />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

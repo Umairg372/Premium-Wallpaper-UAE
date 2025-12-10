@@ -36,7 +36,7 @@ const Contact = () => {
                     <div>
                       <h3 className="font-semibold text-white mb-1">Phone Numbers</h3>
                       <p className="text-gray-300">034505474430</p>
-                      <p className="text-gray-300">03187470608</p>
+                      <p className="text-gray-300">00971501973357</p>
                     </div>
                   </div>
 
@@ -44,7 +44,7 @@ const Contact = () => {
                     <Mail className="h-6 w-6 text-green-400 mt-1" />
                     <div>
                       <h3 className="font-semibold text-white mb-1">Email</h3>
-                      <p className="text-gray-300">mianumairsab372@gmail.com</p>
+                      <p className="text-gray-300">mainaltaf123@gmail.com</p>
                     </div>
                   </div>
 
@@ -104,7 +104,7 @@ const Contact = () => {
                   Call Now: 034505474430
                 </button>
               </a>
-              <a href={`https://wa.me/97134505474430`}>
+              <a href={`https://wa.me/00971501973357`}>
                 <button className="px-8 py-4 bg-white hover:bg-gray-100 text-gray-900 rounded-lg font-semibold transition-colors shadow-lg">
                   WhatsApp Us
                 </button>

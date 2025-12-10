@@ -33,7 +33,15 @@ const Colors = () => {
             
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-12">
               {['Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Pink', 'Orange', 'Brown', 'Gray', 'Black', 'White', 'Gold'].map((color) => (
-                <div key={color} className="aspect-square rounded-lg border-2 border-border hover:border-primary transition-colors cursor-pointer flex items-center justify-center">
+                <div
+                  key={color}
+                  className="aspect-square rounded-lg border-2 border-border hover:border-primary transition-colors cursor-pointer flex items-center justify-center"
+                  onClick={() => {
+                    // Scroll to the product gallery and potentially trigger a category filter
+                    document.querySelector('.product-gallery-section')?.scrollIntoView({ behavior: 'smooth' });
+                    // Note: Actual filtering would require updating ProductGallery to accept state changes from outside
+                  }}
+                >
                   <span className="font-medium text-sm">{color}</span>
                 </div>
               ))}
@@ -42,13 +50,12 @@ const Colors = () => {
         </section>
 
         {/* Product Gallery */}
-        <section className="py-16">
+        <section className="py-16 product-gallery-section">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <ProductGallery 
-              categories={['Red', 'Blue', 'Green', 'Pink', 'Yellow', 'Purple', 'Gray', 'White', 'Brown', 'Gold']}
+            <ProductGallery
+              categories={['Red', 'Blue', 'Green', 'Pink', 'Yellow', 'Purple', 'Gray', 'White', 'Brown', 'Gold', 'Orange', 'Black']}
               title="Color-Based Collections"
               pageType="colors"
-              itemsOverride={getCuratedColors()}
             />
           </div>
         </section>
