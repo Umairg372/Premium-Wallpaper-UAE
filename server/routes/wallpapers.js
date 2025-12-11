@@ -12,6 +12,8 @@ console.log('--- wallpapers.js loaded ---');
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const baseUrl = process.env.PUBLIC_URL || '';
+
 // Define image processing constants
 const THUMBNAIL_WIDTH = 300;  // Increased from 200 for better quality thumbnails
 const MEDIUM_WIDTH = 1000;    // Increased from 800 for better medium quality
@@ -45,7 +47,7 @@ async function processImageAndSave(originalFilePath, originalFileName, uploadSub
     mediumUrl: '',
     webpPath: '',
     webpUrl: '',
-    originalImageUrl: `/uploads/${uploadSubDir}/${path.basename(originalFilePath)}`, // This should be the URL to the original file saved by Multer
+    originalImageUrl: `${baseUrl}/uploads/${uploadSubDir}/${path.basename(originalFilePath)}`, // This should be the URL to the original file saved by Multer
     originalWidth: 0,
     originalHeight: 0,
   };
@@ -61,7 +63,7 @@ async function processImageAndSave(originalFilePath, originalFileName, uploadSub
       .toFormat('jpeg')
       .jpeg({ quality: 90, chromaSubsampling: '4:2:0', mozjpeg: true })
       .toFile(output.thumbnailPath);
-    output.thumbnailUrl = `/uploads/${uploadSubDir}/${path.basename(output.thumbnailPath)}`;
+    output.thumbnailUrl = `${baseUrl}/uploads/${uploadSubDir}/${path.basename(output.thumbnailPath)}`;
 
     // Medium size
     output.mediumPath = path.join(targetDir, `${finalBaseName}-medium.jpg`);
@@ -70,7 +72,7 @@ async function processImageAndSave(originalFilePath, originalFileName, uploadSub
       .toFormat('jpeg')
       .jpeg({ quality: 95, chromaSubsampling: '4:2:0', mozjpeg: true })
       .toFile(output.mediumPath);
-    output.mediumUrl = `/uploads/${uploadSubDir}/${path.basename(output.mediumPath)}`;
+    output.mediumUrl = `${baseUrl}/uploads/${uploadSubDir}/${path.basename(output.mediumPath)}`;
 
     // WebP version
     output.webpPath = path.join(targetDir, `${finalBaseName}.webp`);
@@ -78,7 +80,7 @@ async function processImageAndSave(originalFilePath, originalFileName, uploadSub
       .toFormat('webp')
       .webp({ quality: WEBP_QUALITY, effort: 4 }) // effort 4 is good balance of speed/quality
       .toFile(output.webpPath);
-    output.webpUrl = `/uploads/${uploadSubDir}/${path.basename(output.webpPath)}`;
+    output.webpUrl = `${baseUrl}/uploads/${uploadSubDir}/${path.basename(output.webpPath)}`;
 
   } catch (error) {
     console.error(`Error processing image ${originalFileName}:`, error);
@@ -155,7 +157,7 @@ router.post('/:id/video', authenticateToken, uploadVideo.single('video'), (req, 
 
   const wallpaperId = req.params.id;
   const videoPath = req.file.path;
-  const videoUrl = `/uploads/videos/${path.basename(req.file.filename)}`;
+  const videoUrl = `${baseUrl}/uploads/videos/${path.basename(req.file.filename)}`;
 
   const sql = 'UPDATE wallpapers SET videoPath = ?, videoUrl = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?';
   const params = [videoPath, videoUrl, wallpaperId];
@@ -419,7 +421,7 @@ router.post('/upload-video-wallpaper', authenticateToken, uploadVideo.single('vi
   }
 
   const videoPath = req.file.path;
-  const videoUrl = `/uploads/videos/${path.basename(req.file.filename)}`;
+  const videoUrl = `${baseUrl}/uploads/videos/${path.basename(req.file.filename)}`;
 
   const pageType = rawPageType && rawPageType !== 'undefined' && rawPageType !== 'null' ? rawPageType : 'collections';
   const category = rawCategory && rawCategory !== 'undefined' && rawCategory !== 'null' ? rawCategory : 'uncategorized';
