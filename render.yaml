@@ -1,0 +1,39 @@
+services:
+- type: web
+  name: wallpaper-backend
+  env: node
+  region: oregon  # You can change this to your preferred region
+  buildCommand: "npm install"
+  startCommand: "node server/index.js"
+  envVars:
+  - key: DB_PATH
+    value: ./database.db
+  - key: JWT_SECRET
+    sync: false  # Set this in Render dashboard as secret
+  - key: EMAIL_HOST
+    value: smtp.gmail.com
+  - key: EMAIL_PORT
+    value: "587"
+  - key: EMAIL_SECURE
+    value: "false"
+  - key: EMAIL_USER
+    sync: false  # Set this in Render dashboard as secret
+  - key: EMAIL_PASS
+    sync: false  # Set this in Render dashboard as secret
+  - key: CONTACT_EMAIL
+    value: mainaltaf123@gmail.com
+  - key: TWILIO_ACCOUNT_SID
+    sync: false  # Set this in Render dashboard as secret
+  - key: TWILIO_AUTH_TOKEN
+    sync: false  # Set this in Render dashboard as secret
+  - key: TWILIO_PHONE_NUMBER
+    sync: false  # Set this in Render dashboard as secret
+  - key: BUSINESS_PHONE_1
+    value: 034505474430
+  - key: BUSINESS_PHONE_2
+    value: 00971501973357
+  - key: BACKEND_PORT
+    value: "10000"
+  disk:  # For persistent database storage
+    name: database-storage
+    sizeGB: 1

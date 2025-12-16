@@ -1,0 +1,22 @@
+spec:
+  name: premium-wallpaper-uae
+  services:
+  - name: web
+    github:
+      repo: Umairg372/Premium-Wallpaper-UAE
+      branch: main
+    run_command: npm start
+    environment_slug: node
+    build_command: npm install && npm run build
+    environment_variables:
+      - key: NODE_ENV
+        value: production
+      - key: BACKEND_PORT
+        value: "8080"
+      - key: DB_PATH
+        value: ./database.db
+    http_port: 8080
+    instance_size_slug: basic-xxs  # This is the $5/month tier
+    instance_count: 1
+    routes:
+      - path: /

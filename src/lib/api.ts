@@ -1,6 +1,11 @@
 import { getAuthToken } from './auth';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+// Determine the API base URL based on environment
+const isDevelopment = process.env.NODE_ENV === 'development';
+const API_BASE_URL = import.meta.env.VITE_API_URL ||
+                     import.meta.env.VITE_PROD_API_URL ||
+                     process.env.VITE_PROD_API_URL ||
+                     (isDevelopment ? '/api' : 'https://your-backend-url.onrender.com/api');
 
 export interface Wallpaper {
   id: number;
@@ -76,58 +81,37 @@ export async function getWallpapers(filters?: {
   } catch (error) {
     console.error('[API] Network error fetching wallpapers:', error);
 
-    // Fallback: Return some mock data for Vercel deployment
-    console.warn('[API] Using fallback data for Vercel deployment');
-    return [
-      {
-        id: 1,
-        name: 'Modern Geometric',
-        category: 'Modern',
-        color: 'Blue',
-        pageType: 'collections',
-        imagePath: '/src/assets/collections/modern/geometric-pattern.jpg',
-        imageUrl: '/src/assets/collections/modern/geometric-pattern.jpg',
-        thumbnailUrl: '/src/assets/collections/modern/geometric-pattern.jpg',
-        mediumUrl: '/src/assets/collections/modern/geometric-pattern.jpg',
-        webpUrl: '/src/assets/collections/modern/geometric-pattern.jpg',
-        width: 800,
-        height: 1000,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: 2,
-        name: 'Classic Floral',
-        category: 'Classic',
-        color: 'Green',
-        pageType: 'collections',
-        imagePath: '/src/assets/collections/classic/floral-design.jpg',
-        imageUrl: '/src/assets/collections/classic/floral-design.jpg',
-        thumbnailUrl: '/src/assets/collections/classic/floral-design.jpg',
-        mediumUrl: '/src/assets/collections/classic/floral-design.jpg',
-        webpUrl: '/src/assets/collections/classic/floral-design.jpg',
-        width: 800,
-        height: 1000,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: 3,
-        name: 'Kids Stars',
-        category: 'Nursery',
-        color: 'Yellow',
-        pageType: 'kids',
-        imagePath: '/src/assets/kids/nursery/stars-pattern.jpg',
-        imageUrl: '/src/assets/kids/nursery/stars-pattern.jpg',
-        thumbnailUrl: '/src/assets/kids/nursery/stars-pattern.jpg',
-        mediumUrl: '/src/assets/kids/nursery/stars-pattern.jpg',
-        webpUrl: '/src/assets/kids/nursery/stars-pattern.jpg',
-        width: 800,
-        height: 1000,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+    // In production, if the API is unreachable, try to load image manifest
+    if (!isDevelopment) {
+      try {
+        // Dynamically import the autoImageLoader for fallback
+        const { loadAllImages } = await import('./autoImageLoader');
+        const images = await loadAllImages();
+        console.log(`[API] Loaded ${images.length} images from image manifest as fallback`);
+        return images.map(img => ({
+          id: img.id,
+          name: img.name,
+          category: img.category,
+          color: img.color,
+          pageType: img.pageType,
+          imagePath: img.image,
+          imageUrl: img.image,
+          thumbnailUrl: undefined,
+          mediumUrl: undefined,
+          webpUrl: undefined,
+          width: undefined,
+          height: undefined,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }));
+      } catch (fallbackError) {
+        console.error('[API] Fallback to image manifest also failed:', fallbackError);
       }
-    ];
+    }
+
+    // Fallback: Return some mock data if all else fails
+    console.warn('[API] Using default fallback data');
+    return [];
   }
 }
 
@@ -143,20 +127,41 @@ export async function getWallpaper(id: number): Promise<Wallpaper> {
     return response.json();
   } catch (error) {
     console.error('[API] Error fetching single wallpaper:', error);
-    // Return mock data for Vercel deployment
+    // In production, return null or handle appropriately
+    if (!isDevelopment) {
+      // Return mock data with the requested ID
+      return {
+        id: id,
+        name: `Wallpaper ${id}`,
+        category: 'Modern',
+        color: 'Blue',
+        pageType: 'collections',
+        imagePath: '',
+        imageUrl: '',
+        thumbnailUrl: undefined,
+        mediumUrl: undefined,
+        webpUrl: undefined,
+        width: undefined,
+        height: undefined,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+    }
+
+    // Return mock data for development
     return {
       id: id,
       name: `Wallpaper ${id}`,
       category: 'Modern',
       color: 'Blue',
       pageType: 'collections',
-      imagePath: '/src/assets/collections/modern/geometric-pattern.jpg',
-      imageUrl: '/src/assets/collections/modern/geometric-pattern.jpg',
-      thumbnailUrl: '/src/assets/collections/modern/geometric-pattern.jpg',
-      mediumUrl: '/src/assets/collections/modern/geometric-pattern.jpg',
-      webpUrl: '/src/assets/collections/modern/geometric-pattern.jpg',
-      width: 800,
-      height: 1000,
+      imagePath: '',
+      imageUrl: '',
+      thumbnailUrl: undefined,
+      mediumUrl: undefined,
+      webpUrl: undefined,
+      width: undefined,
+      height: undefined,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -272,7 +277,22 @@ export async function getCategories(): Promise<string[]> {
     return response.json();
   } catch (error) {
     console.error('[API] Error fetching categories:', error);
-    // Return mock categories for Vercel deployment
+    // In production, try to get categories from the autoImageLoader
+    if (!isDevelopment) {
+      try {
+        // Dynamically import the autoImageLoader for fallback
+        const { loadAllImages } = await import('./autoImageLoader');
+        const images = await loadAllImages();
+        // Extract unique categories from the loaded images
+        const categories = [...new Set(images.map(img => img.category))];
+        console.log(`[API] Loaded ${categories.length} categories from image manifest as fallback`);
+        return categories;
+      } catch (fallbackError) {
+        console.error('[API] Fallback to image manifest for categories also failed:', fallbackError);
+      }
+    }
+
+    // Return mock categories if all else fails
     return ['Modern', 'Classic', 'Luxury', 'Nursery', 'Toddlers', '3D Geometric', '3D Nature'];
   }
 }

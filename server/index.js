@@ -39,6 +39,16 @@ async function startServer() {
     // Serve uploaded images statically
     app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
+    // Serve static files in production
+    if (process.env.NODE_ENV === 'production') {
+      app.use(express.static(path.join(__dirname, '../dist')));
+
+      // Serve index.html for all non-API routes
+      app.get(/^(?!\/api|\/uploads)/, (req, res) => {
+        res.sendFile(path.join(__dirname, '../dist', 'index.html'));
+      });
+    }
+
     // Routes
     app.use('/api/auth', authRoutes);
     app.use('/api/wallpapers', wallpaperRoutes);
