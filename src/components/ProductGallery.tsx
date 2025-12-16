@@ -34,6 +34,7 @@ const ProductGallery = ({ categories, title, isKidsTheme = false, pageType = 'co
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [allWallpapers, setAllWallpapers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [likedWallpapers, setLikedWallpapers] = useState<Set<number>>(new Set());
 
   const fetchImages = async () => {
     setLoading(true);
@@ -298,9 +299,21 @@ const ProductGallery = ({ categories, title, isKidsTheme = false, pageType = 'co
                       <Button
                         size="sm"
                         variant="secondary"
-                        className="bg-white/90 hover:bg-white"
+                        className={`bg-white/90 hover:bg-white ${likedWallpapers.has(wallpaper.id) ? 'text-red-500' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setLikedWallpapers(prev => {
+                            const newLiked = new Set(prev);
+                            if (newLiked.has(wallpaper.id)) {
+                              newLiked.delete(wallpaper.id);
+                            } else {
+                              newLiked.add(wallpaper.id);
+                            }
+                            return newLiked;
+                          });
+                        }}
                       >
-                        <Heart className="h-4 w-4" />
+                        <Heart className={`h-4 w-4 ${likedWallpapers.has(wallpaper.id) ? 'fill-current' : ''}`} />
                       </Button>
                     </div>
                   </div>

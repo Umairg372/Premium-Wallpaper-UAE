@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "npm-run-all --parallel watch:images start-vite start-server",
+    "dev": "node scripts/start-dev.js",
+    "dev:old": "npm-run-all --parallel watch:images start-vite start-server",
     "start:fresh": "node scripts/generate-image-manifest.js && vite",
     "start-vite": "vite",
     "start-server": "node server/index.js",

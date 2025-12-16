@@ -104,6 +104,11 @@ const Contact = () => {
                   Call Now: 034505474430
                 </button>
               </a>
+              <a href="tel:00971501973357">
+                <button className="px-8 py-4 bg-green-400 hover:bg-green-500 text-white rounded-lg font-semibold transition-colors shadow-lg">
+                  Call Now: 00971501973357
+                </button>
+              </a>
               <a href={`https://wa.me/00971501973357`}>
                 <button className="px-8 py-4 bg-white hover:bg-gray-100 text-gray-900 rounded-lg font-semibold transition-colors shadow-lg">
                   WhatsApp Us
